@@ -10,6 +10,7 @@ from anibridge.library.interfaces import (
     LibrarySection,
     LibraryShow,
     LibraryUser,
+    MediaKind,
 )
 from anibridge.library.registry import (
     LibraryProviderRegistry,
@@ -28,6 +29,7 @@ __all__ = [
     "LibrarySection",
     "LibraryShow",
     "LibraryUser",
+    "MediaKind",
     "library_provider",
     "provider_registry",
 ]
