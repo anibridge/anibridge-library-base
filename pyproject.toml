@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [tool.hatch.build]
-packages = ["src/anibridge/library"]
+packages = ["src/anibridge"]
 
 [tool.ruff]
 indent-width = 4
