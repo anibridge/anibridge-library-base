@@ -11,6 +11,11 @@ from anibridge.library.interfaces import (
     LibraryShow,
     LibraryUser,
 )
+from anibridge.library.registry import (
+    LibraryProviderRegistry,
+    library_provider,
+    provider_registry,
+)
 
 __all__ = [
     "ExternalId",
@@ -18,8 +23,11 @@ __all__ = [
     "LibraryEpisode",
     "LibraryMovie",
     "LibraryProvider",
+    "LibraryProviderRegistry",
     "LibrarySeason",
     "LibrarySection",
     "LibraryShow",
     "LibraryUser",
+    "library_provider",
+    "provider_registry",
 ]
