@@ -12,6 +12,9 @@ from anibridge.library.interfaces import (
     LibrarySection,
     LibraryShow,
     LibraryUser,
+    MappingDescriptor,
+    MappingEdge,
+    MappingGraph,
     MediaKind,
 )
 from anibridge.library.registry import (
@@ -33,6 +36,9 @@ __all__ = [
     "LibrarySection",
     "LibraryShow",
     "LibraryUser",
+    "MappingDescriptor",
+    "MappingEdge",
+    "MappingGraph",
     "MediaKind",
     "library_provider",
     "provider_registry",
