@@ -12,6 +12,7 @@ from starlette.requests import Request
 __all__ = [
     "HistoryEntry",
     "LibraryEntity",
+    "LibraryEntry",
     "LibraryEpisode",
     "LibraryMedia",
     "LibraryMovie",

@@ -3,6 +3,7 @@
 from anibridge.library.base import (
     HistoryEntry,
     LibraryEntity,
+    LibraryEntry,
     LibraryEpisode,
     LibraryMedia,
     LibraryMovie,
@@ -23,6 +24,7 @@ from anibridge.library.registry import (
 __all__ = [
     "HistoryEntry",
     "LibraryEntity",
+    "LibraryEntry",
     "LibraryEpisode",
     "LibraryMedia",
     "LibraryMovie",
