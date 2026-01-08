@@ -1,80 +1,90 @@
-# anibridge-library-interface
+# anibridge-library-base
 
-anibridge-library-interface provides a set of protocols and utilities to implement and register media library providers for the [AniBridge](https://github.com/anibridge/anibridge) project.
+anibridge-library-base provides base classes and utilities to implement and register media library providers for the [AniBridge](https://github.com/anibridge/anibridge) project.
 
 > [!IMPORTANT]
-> This package is a definition-only interface library. It does not include any concrete provider implementations. Provider implementations should be created in separate packages that depend on this interface library.
+> This package is intended for developers building AniBridge library providers. If you're looking to use AniBridge as an end user, please refer to the [AniBridge documentation](https://anibridge.eliasbenb.dev/).
 
 ## Installation
 
 ```shell
-pip install anibridge-library-interface
-# pip install git+https://github.com/anibridge/anibridge-library-interface.git
+pip install anibridge-library-base
+# pip install git+https://github.com/anibridge/anibridge-library-base.git
 ```
 
 ## API reference
 
-The package exposes two main modules:
+The package exposes core base classes in `anibridge.library.base` and registration helpers in `anibridge.library.registry`.
 
-- `anibridge.library.interfaces`: provider and entity protocols
-- `anibridge.library.registry`: registration helpers and `provider_registry`
+To get more context, read the `anibridge.library.base` and `anibridge.library.registry` module docstrings.
 
-Key types and protocols (from `anibridge.library.interfaces`):
+- `LibraryProvider` (base class)
 
-- `MediaKind` (StrEnum): High-level kinds: `MOVIE`, `SHOW`, `SEASON`, `EPISODE`.
+  - Key methods and hooks:
+    - `__init__(*, config: dict | None = None) -> None`: Construct a provider with optional configuration.
+    - `async initialize() -> None`: Optional async initialization hook for I/O or authentication.
+    - `async clear_cache() -> None`: Clear any provider caches to free memory or refresh data.
+    - `async close() -> None`: Close the provider and release resources.
+    - `async get_sections() -> Sequence[LibrarySection[LibraryProviderT]]`: Return available library sections for the provider.
+    - `async list_items(section: LibrarySection[LibraryProviderT], *, min_last_modified: datetime | None = None, require_watched: bool = False, keys: Sequence[str] | None = None) -> Sequence[LibraryMedia[LibraryProviderT]]`: List media items within a section with optional filtering.
+    - `async parse_webhook(request: Request) -> tuple[bool, Sequence[str]]`: Parse an incoming webhook and return whether it applies plus affected item keys.
+    - `user() -> LibraryUser | None`: Return the associated user object, if any.
 
-- `LibraryEntity` (Protocol): Base protocol with `key`, `media_kind`, `title`, and helpers `provider()`.
+- `LibraryEntry` (per-item user state)
 
-- `LibrarySection` (Protocol): Represents a logical collection/section in a library.
+  - Key methods and properties:
+    - `async history() -> Sequence[HistoryEntry]`: Return user history events for the item (tz-aware timestamps).
+    - `media() -> LibraryMedia[LibraryProviderT]`: Return the associated `LibraryMedia` object.
+    - `on_watching -> bool`: Whether the item is currently being watched.
+    - `on_watchlist -> bool`: Whether the item is on the user's watchlist.
+    - `async review() -> str | None`: Return the user's review text for the item, if any.
+    - `section() -> LibrarySection[LibraryProviderT]`: Return the parent library section for the item.
+    - `user_rating -> int | None`: Optional user rating on a 0–100 scale.
+    - `view_count -> int`: Total view count for the item (including children).
 
-- `LibraryMedia` (Protocol): Base media item protocol exposing:
+- `LibraryMedia` (media metadata)
 
-  - `on_watching` and `on_watchlist` properties
-  - `poster_image`, `user_rating` (0–100 or None), and `view_count`
-  - Async `history() -> Sequence[HistoryEntry]`
-  - `ids() -> dict[str,str]` for external identifiers
-  - Async `review() -> str | None`
-  - `section() -> LibrarySection`
+  - Key properties and helpers:
+    - `external_url -> str | None`: URL to the provider's media item, if available.
+    - `poster_image -> str | None`: Poster or cover image URL, if available.
+    - `ids() -> dict[str, str]`: External identifier mappings for logging/debugging.
 
-- `LibraryMovie`, `LibraryShow`, `LibrarySeason`, `LibraryEpisode` (Protocols):
+- `LibraryShow`, `LibrarySeason`, `LibraryEpisode`, `LibraryMovie`
 
-  - `LibraryShow` adds `ordering` ("tmdb"|"tvdb"|"") and `episodes()`/`seasons()` helpers.
-  - `LibrarySeason` has an `index` and `episodes()`/`show()` helpers.
-  - `LibraryEpisode` has `index`, `season_index`, and `season()`/`show()` helpers.
+  - `LibraryShow`:
+    - `episodes() -> Sequence[LibraryEpisode[LibraryProviderT]]`: Return child episodes.
+    - `seasons() -> Sequence[LibrarySeason[LibraryProviderT]]`: Return child seasons.
+  - `LibrarySeason`:
+    - `index: int`: Season index.
+    - `episodes() -> Sequence[LibraryEpisode[LibraryProviderT]]`: Return episodes in the season.
+    - `show() -> LibraryShow[LibraryProviderT]`: Return the parent show.
+  - `LibraryEpisode`:
+    - `index: int`, `season_index: int`: Episode and season indices.
+    - `season() -> LibrarySeason[LibraryProviderT]`: Return parent season.
+    - `show() -> LibraryShow[LibraryProviderT]`: Return parent show.
 
-- `HistoryEntry` (dataclass): `library_key: str`, `viewed_at: datetime` (timezone-aware).
+- `HistoryEntry`
 
-- `LibraryUser` (dataclass): `key: str`, `title: str`.
+  - `library_key: str`, `viewed_at: datetime` — records a timezone-aware view event for an item.
 
-Core provider protocol (`LibraryProvider`):
+- `MediaKind` (StrEnum)
 
-- Class attribute: `NAMESPACE: ClassVar[str]`: Provider namespace identifier.
-- Constructor: `__init__(*, config: dict | None = None)`: Receives provider-scoped config.
-- `async initialize() -> None`: Async setup hook.
-- `user() -> LibraryUser | None`: Return associated user info.
-- `async clear_cache() -> None` and `async close() -> None`: Lifecycle helpers.
-- `async get_sections() -> Sequence[LibrarySection[Self]]`: List available sections.
-- `async list_items(section, *, min_last_modified: datetime | None = None, require_watched: bool = False, keys: Sequence[str] | None = None) -> Sequence[LibraryMedia[Self]]`: List items for a section with optional filters.
-- `async parse_webhook(request: starlette.requests.Request) -> tuple[bool, Sequence[str]]`: Parse incoming webhooks and return whether it's relevant plus media keys to sync.
+  - High-level media kinds: `MOVIE`, `SHOW`, `SEASON`, `EPISODE`.
 
-Registry utilities (from `anibridge.library.registry`):
+- `LibraryProviderRegistry` and `library_provider` decorator
 
-- `LibraryProviderRegistry`: Registry class with:
-
-  - `create(namespace, *, config=None) -> LibraryProvider`: Instantiate registered provider
-  - `get(namespace) -> type[LibraryProvider]`: Lookup provider class
-  - `namespaces() -> tuple[str,...]`: Registered namespaces
-  - `register(cls, *, namespace: str | None = None)`: Register as decorator or direct call
-  - `unregister(namespace)` / `clear()` / `__contains__` / `__iter__`
-
-- `provider_registry`: Module-level `LibraryProviderRegistry` instance.
-- `library_provider`: Decorator/helper that registers a provider class in `provider_registry` (accepts `namespace=` and `registry=` overrides).
-
-Refer to the module docstrings and the `src/anibridge/library` sources for method signatures and usage examples.
+  - Registry API (see `anibridge.library.registry`):
+    - `create(namespace: str, *, config: dict | None = None) -> LibraryProvider`: Instantiate a provider for `namespace`.
+    - `get(namespace: str) -> type[LibraryProvider]`: Return the provider class registered under `namespace`.
+    - `namespaces() -> tuple[str, ...]`: Return registered namespace identifiers.
+    - `register(provider_cls: type[LibraryProvider] | None = None, *, namespace: str | None = None) -> type[LibraryProvider] | Callable[[type[LP]], type[LP]]`: Register a provider class or act as a decorator factory.
+    - `unregister(namespace: str) -> None`: Remove a provider registration.
+    - `provider_registry`: Module-level registry instance.
+    - `library_provider(...)`: Convenience decorator to register providers into the module-level registry.
 
 ## Examples
 
-You can view the following built-in provider implementations as examples of how to implement the interface:
+You can view the following built-in provider implementations as examples of how to implement the base classes:
 
 - [anibridge-provider-template](https://github.com/anibridge/anibridge-provider-template)
 - [anibridge-plex-provider](https://github.com/anibridge/anibridge-plex-provider)

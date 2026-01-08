@@ -1,6 +1,6 @@
-"""Anibridge library provider interfaces package."""
+"""Anibridge library provider base package."""
 
-from anibridge.library.interfaces import (
+from anibridge.library.base import (
     HistoryEntry,
     LibraryEntity,
     LibraryEpisode,

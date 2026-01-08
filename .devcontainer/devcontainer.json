@@ -1,5 +1,5 @@
 {
-    "name": "anibridge-library-interface",
+    "name": "anibridge-library-base",
     "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
     "features": {
         "ghcr.io/devcontainers/features/github-cli:1": {},

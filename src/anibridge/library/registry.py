@@ -3,7 +3,7 @@
 from collections.abc import Callable, Iterator
 from typing import TypeVar, overload
 
-from anibridge.library.interfaces import LibraryProvider
+from anibridge.library.base import LibraryProvider
 
 LP = TypeVar("LP", bound=LibraryProvider)
 

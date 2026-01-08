@@ -1,7 +1,7 @@
 [project]
-name = "anibridge-library-interface"
-version = "0.1.1"
-description = "Library provider interfaces for the AniBridge project."
+name = "anibridge-library-base"
+version = "0.1.0"
+description = "Library provider base classes for the AniBridge project."
 readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
