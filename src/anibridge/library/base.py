@@ -153,11 +153,11 @@ class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
         ...
 
 
-class LibraryMovie(LibraryMedia[LibraryProviderT], ABC):
+class LibraryMovie(LibraryEntry[LibraryProviderT], ABC):
     """Movie item in a media library."""
 
 
-class LibraryShow(LibraryMedia[LibraryProviderT], ABC):
+class LibraryShow(LibraryEntry[LibraryProviderT], ABC):
     """Episodic show/series in a media library."""
 
     @abstractmethod
@@ -179,7 +179,7 @@ class LibraryShow(LibraryMedia[LibraryProviderT], ABC):
         ...
 
 
-class LibrarySeason(LibraryMedia[LibraryProviderT], ABC):
+class LibrarySeason(LibraryEntry[LibraryProviderT], ABC):
     """Season container within a show."""
 
     index: int
@@ -210,7 +210,7 @@ class LibrarySeason(LibraryMedia[LibraryProviderT], ABC):
         )
 
 
-class LibraryEpisode(LibraryMedia[LibraryProviderT], ABC):
+class LibraryEpisode(LibraryEntry[LibraryProviderT], ABC):
     """Episode item within a season/show."""
 
     index: int
@@ -313,7 +313,7 @@ class LibraryProvider(ABC):
         min_last_modified: datetime | None = None,
         require_watched: bool = False,
         keys: Sequence[str] | None = None,
-    ) -> Sequence[LibraryMedia[LibraryProviderT]]:
+    ) -> Sequence[LibraryEntry[LibraryProviderT]]:
         """List items in a library section with optional filtering.
 
         Args:
@@ -326,7 +326,7 @@ class LibraryProvider(ABC):
                 in this sequence.
 
         Returns:
-            Sequence[LibraryMedia[LibraryProviderT]]: The list of media items.
+            Sequence[LibraryEntry[LibraryProviderT]]: The list of library items.
         """
         ...
 
