@@ -45,11 +45,17 @@ class LibraryEntity[ProviderT: LibraryProvider](ABC):
     _provider: ProviderT = field(repr=False, compare=False)
     _key: str
     _title: str = field(compare=False)
+    _media_kind: MediaKind
 
     @property
     def key(self) -> str:
         """Return the unique key for this entity."""
         return self._key
+
+    @property
+    def media_kind(self) -> MediaKind:
+        """Return the high-level media kind of this entity."""
+        return self._media_kind
 
     def provider(self) -> ProviderT:
         """Return the provider associated with this entity."""
