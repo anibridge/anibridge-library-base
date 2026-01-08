@@ -1,10 +1,11 @@
-"""Library provider protocols for media libraries."""
+"""Library provider base classes and contracts."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, Literal, Protocol, Self, TypeVar, runtime_checkable
+from typing import ClassVar, TypeVar, cast
 
 from starlette.requests import Request
 
@@ -36,146 +37,129 @@ class MediaKind(StrEnum):
     EPISODE = "episode"
 
 
-@runtime_checkable
-class LibraryEntity(Protocol[LibraryProviderT]):
-    """Base protocol for library entities."""
+@dataclass(slots=True, eq=False)
+class LibraryEntity[ProviderT: LibraryProvider](ABC):
+    """Base class for library entities."""
 
-    key: str
-    media_kind: MediaKind
-    title: str
+    _provider: ProviderT = field(repr=False, compare=False)
+    _key: str
+    _title: str = field(compare=False)
 
-    def provider(self) -> LibraryProviderT:
-        """Get the library provider this entity belongs to.
+    @property
+    def key(self) -> str:
+        """Return the unique key for this entity."""
+        return self._key
 
-        Returns:
-            LibraryProvider: The library provider.
-        """
-        ...
+    def provider(self) -> ProviderT:
+        """Return the provider associated with this entity."""
+        return self._provider
+
+    @property
+    def title(self) -> str:
+        """Return the entity title."""
+        return self._title
 
     def __hash__(self) -> int:
-        """Compute the hash based on the entity's key."""
-        return hash(f"{self.provider().NAMESPACE}:{self.__class__.__name__}:{self.key}")
+        """Compute a hash based on provider namespace, class name, and key."""
+        return hash((self._provider.NAMESPACE, self.__class__.__name__, self.key))
+
+    def __eq__(self, other: object) -> bool:
+        """Compare entities by provider namespace and key."""
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        other_ent = cast(LibraryEntity, other)
+        return (
+            getattr(self._provider, "NAMESPACE", None)
+            == getattr(other_ent._provider, "NAMESPACE", None)
+            and self.key == other_ent.key
+        )
 
     def __repr__(self) -> str:
-        """Return a string representation of the library entity."""
+        """Return a short representation for debugging."""
         return f"<{self.__class__.__name__}:{self.key}:{self.title[:32]}>"
 
 
-@runtime_checkable
-class LibrarySection(LibraryEntity[LibraryProviderT], Protocol[LibraryProviderT]):
+class LibrarySection(LibraryEntity[LibraryProviderT], ABC):
     """Represents a logical collection/section within the media library."""
 
 
-@runtime_checkable
-class LibraryMedia(LibraryEntity[LibraryProviderT], Protocol[LibraryProviderT]):
-    """Base protocol for library items."""
+class LibraryMedia(LibraryEntity[LibraryProviderT], ABC):
+    """Base class for library media items.
+
+    Implementations should provide concrete behaviour for the abstract
+    properties and methods below.
+    """
 
     @property
-    def on_watching(self) -> bool:
-        """Check if the media item is on the user's current watching list.
-
-        Determines whether the item is eligible for the current watching status.
-
-        Returns:
-            bool: True if currently watching, False otherwise.
-        """
-        ...
-
-    @property
-    def on_watchlist(self) -> bool:
-        """Check if the media item is on the user's watchlist.
-
-        Determines whether the item is eligible for the planning status.
-
-        Returns:
-            bool: True if on watchlist, False otherwise.
-        """
-        ...
+    def external_url(self) -> str | None:
+        """URL to the provider's media item, if available."""
+        return None
 
     @property
     def poster_image(self) -> str | None:
-        """Primary poster or cover image for the media item if available."""
+        """Primary poster or cover image URL, if available."""
+        return None
+
+    def ids(self) -> dict[str, str]:
+        """Return external identifier mappings for logging/debugging."""
+        return {}
+
+
+class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
+    """Base class for library entries."""
+
+    @abstractmethod
+    async def history(self) -> Sequence[HistoryEntry]:
+        """Return user history entries for this media item (tz-aware timestamps)."""
+        ...
+
+    @abstractmethod
+    def media(self) -> LibraryMedia[ProviderT]:
+        """Return the media item associated with this entry."""
+        ...
+
+    @property
+    @abstractmethod
+    def on_watching(self) -> bool:
+        """Whether the item is on the user's current watching list."""
+        ...
+
+    @property
+    @abstractmethod
+    def on_watchlist(self) -> bool:
+        """Whether the item is on the user's watchlist."""
+        ...
+
+    @abstractmethod
+    async def review(self) -> str | None:
+        """Return the user's review text for this item, if any."""
+        ...
+
+    @abstractmethod
+    def section(self) -> LibrarySection[LibraryProviderT]:
+        """Return the parent library section for this media item."""
         ...
 
     @property
     def user_rating(self) -> int | None:
-        """Get the user rating for the media item.
-
-        Returns:
-            int | None: The user rating on a 0-100 scale, or None if not rated.
-        """
-        ...
+        """User rating on a 0-100 scale, or None if not rated."""
+        return None
 
     @property
+    @abstractmethod
     def view_count(self) -> int:
-        """Get the view count for the media item.
-
-        This includes views of child items as well.
-
-        Returns:
-            int: The number of times the item has been viewed.
-        """
-        ...
-
-    async def history(self) -> Sequence[HistoryEntry]:
-        """Get the user history entries for the media item.
-
-        This includes view events for child items as well.
-
-        Note: All returned history entries must have timezone-aware timestamps.
-
-        Returns:
-            Sequence[HistoryEntry]: User history entries.
-        """
-        ...
-
-    def ids(self) -> dict[str, str]:
-        """Get external identifiers associated with the media item.
-
-        These can be arbitrary and are only used for logging and debugging purposes.
-
-        Returns:
-            dict[str, str]: Mapping of ID namespace to ID value.
-        """
-        return {}
-
-    async def review(self) -> str | None:
-        """Get the user's review for the media item.
-
-        Returns:
-            str | None: The user's review text, or None if not reviewed.
-        """
-        ...
-
-    def section(self) -> LibrarySection[LibraryProviderT]:
-        """Get the library section this media item belongs to.
-
-        Returns:
-            LibrarySection: The parent library section.
-        """
+        """Total view count for the item (including children)."""
         ...
 
 
-@runtime_checkable
-class LibraryMovie(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
-    """Protocol for movie items in a media library."""
+class LibraryMovie(LibraryMedia[LibraryProviderT], ABC):
+    """Movie item in a media library."""
 
 
-@runtime_checkable
-class LibraryShow(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
-    """Protocol for episodic series items in a media library."""
+class LibraryShow(LibraryMedia[LibraryProviderT], ABC):
+    """Episodic show/series in a media library."""
 
-    @property
-    def ordering(self) -> Literal["tmdb", "tvdb", ""]:
-        """Get the show's episode ordering method.
-
-        Currently, only "tmdb" and "tvdb" are supported by the mappings database.
-
-        Returns:
-            Literal["tmdb", "tvdb", ""]: The episode ordering method.
-        """
-        ...
-
+    @abstractmethod
     def episodes(self) -> Sequence[LibraryEpisode[LibraryProviderT]]:
         """Get child episodes belonging to the show.
 
@@ -184,6 +168,7 @@ class LibraryShow(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
         """
         ...
 
+    @abstractmethod
     def seasons(self) -> Sequence[LibrarySeason[LibraryProviderT]]:
         """Get child seasons belonging to the show.
 
@@ -193,12 +178,12 @@ class LibraryShow(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
         ...
 
 
-@runtime_checkable
-class LibrarySeason(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
-    """Protocol for season items in a media library."""
+class LibrarySeason(LibraryMedia[LibraryProviderT], ABC):
+    """Season container within a show."""
 
     index: int
 
+    @abstractmethod
     def episodes(self) -> Sequence[LibraryEpisode[LibraryProviderT]]:
         """Get child episodes belonging to the season.
 
@@ -207,6 +192,7 @@ class LibrarySeason(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
         """
         ...
 
+    @abstractmethod
     def show(self) -> LibraryShow[LibraryProviderT]:
         """Get the parent show of the season.
 
@@ -216,20 +202,20 @@ class LibrarySeason(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
         ...
 
     def __repr__(self) -> str:
-        """Return a string representation of the library entity."""
+        """Short representation including show title and season index."""
         return (
-            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}:"
-            f"S{self.index:02d}>"
+            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}>:"
+            f"S{self.index:02d}"
         )
 
 
-@runtime_checkable
-class LibraryEpisode(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT]):
-    """Protocol for episode items in a media library."""
+class LibraryEpisode(LibraryMedia[LibraryProviderT], ABC):
+    """Episode item within a season/show."""
 
     index: int
     season_index: int
 
+    @abstractmethod
     def season(self) -> LibrarySeason[LibraryProviderT]:
         """Get the parent season of the episode.
 
@@ -238,6 +224,7 @@ class LibraryEpisode(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT])
         """
         ...
 
+    @abstractmethod
     def show(self) -> LibraryShow[LibraryProviderT]:
         """Get the parent show of the episode.
 
@@ -247,102 +234,19 @@ class LibraryEpisode(LibraryMedia[LibraryProviderT], Protocol[LibraryProviderT])
         ...
 
     def __repr__(self) -> str:
-        """Return a string representation of the library entity."""
+        """Short representation including show title, season and episode indexes."""
         return (
-            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}:"
+            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}>:"
             f"S{self.season_index:02d}E{self.index:02d}>"
         )
 
 
 @dataclass(frozen=True, slots=True)
 class HistoryEntry:
-    """User history event for an item in the library."""
+    """User history event for a library item."""
 
     library_key: str
     viewed_at: datetime  # Must be timezone-aware
-
-
-@runtime_checkable
-class LibraryProvider(Protocol):
-    """Interface for a provider that exposes a user media library."""
-
-    NAMESPACE: ClassVar[str]
-
-    def __init__(self, *, config: dict | None = None) -> None:
-        """Initialize the provider with optional configuration.
-
-        Args:
-            config (dict | None): Any configuration options that were detected with the
-                provider's namespace as a prefix.
-        """
-
-    async def initialize(self) -> None:
-        """Asynchronous initialization hook.
-
-        Put any async setup logic here (e.g., network requests).
-        """
-        ...
-
-    def user(self) -> LibraryUser | None:
-        """Return the associated user object, if any.
-
-        Returns:
-            LibraryUser | None: The associated user object, if any.
-        """
-        ...
-
-    async def clear_cache(self) -> None:
-        """Clear any provider-local caches."""
-        ...
-
-    async def close(self) -> None:
-        """Close the provider and release resources."""
-        ...
-
-    async def get_sections(self) -> Sequence[LibrarySection[Self]]:
-        """Get all available library sections.
-
-        Returns:
-            Sequence[LibrarySection]: Available library sections.
-        """
-        ...
-
-    async def list_items(
-        self,
-        section: LibrarySection[Self],
-        *,
-        min_last_modified: datetime | None = None,
-        require_watched: bool = False,
-        keys: Sequence[str] | None = None,
-    ) -> Sequence[LibraryMedia[Self]]:
-        """List items in a library section.
-
-        Each item returned must belong to the specified section and meet the provided
-        filtering criteria.
-
-        Args:
-            section (LibrarySection): The library section to list items from.
-            min_last_modified (datetime | None): If provided, only items modified after
-                this timestamp will be included. Expect a timezone-aware datetime.
-            require_watched (bool): If True, only include items that have been marked as
-                watched/viewed.
-            keys (Sequence[str] | None): If provided, only include items whose keys are
-                in this sequence.
-        """
-        ...
-
-    async def parse_webhook(self, request: Request) -> tuple[bool, Sequence[str]]:
-        """Parse a webhook to extract media keys and check if it targets this profile.
-
-        Args:
-            request (Request): The incoming web request.
-
-        Returns:
-            tuple[bool, Sequence[str] | None]: A tuple containing a boolean indicating
-                whether the webhook is valid and targetting the profile, and a sequence
-                of library media keys to sync, or None if not applicable.
-        """
-        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -353,5 +257,96 @@ class LibraryUser:
     title: str
 
     def __hash__(self) -> int:
-        """Compute the hash based on the user's key."""
+        """Return a hash based on the user key."""
         return hash(self.key)
+
+
+class LibraryProvider(ABC):
+    """Abstract base provider that exposes a user media library."""
+
+    NAMESPACE: ClassVar[str]
+
+    def __init__(self, *, config: dict | None = None) -> None:
+        """Initialize the provider with optional configuration.
+
+        Args:
+            config (dict | None): Any configuration options that were detected with the
+                provider's namespace as a prefix.
+        """
+        return None
+
+    async def initialize(self) -> None:
+        """Asynchronous initialization hook.
+
+        Put any async logic that should be run after construction here.
+        """
+        return None
+
+    async def clear_cache(self) -> None:
+        """Clear any cached data held by the provider.
+
+        For more efficient implementations, it is a good idea to cache data
+        fetched from the provider to minimize network requests. AniBridge uses
+        this method occasionally to clear such caches.
+        """
+        return None
+
+    async def close(self) -> None:
+        """Close the provider and release resources."""
+        return None
+
+    @abstractmethod
+    async def get_sections(self) -> Sequence[LibrarySection[LibraryProviderT]]:
+        """Return available library sections for the provider.
+
+        Returns:
+            Sequence[LibrarySection[LibraryProviderT]]: The available library sections.
+        """
+        ...
+
+    @abstractmethod
+    async def list_items(
+        self,
+        section: LibrarySection[LibraryProviderT],
+        *,
+        min_last_modified: datetime | None = None,
+        require_watched: bool = False,
+        keys: Sequence[str] | None = None,
+    ) -> Sequence[LibraryMedia[LibraryProviderT]]:
+        """List items in a library section with optional filtering.
+
+        Args:
+            section (LibrarySection[LibraryProviderT]): The library section to list
+                items from.
+            min_last_modified (datetime | None): If provided, only include items
+                modified after this timezone-aware timestamp.
+            require_watched (bool): If True, only include items marked as watched.
+            keys (Sequence[str] | None): If provided, only include items whose keys are
+                in this sequence.
+
+        Returns:
+            Sequence[LibraryMedia[LibraryProviderT]]: The list of media items.
+        """
+        ...
+
+    async def parse_webhook(self, request: Request) -> tuple[bool, Sequence[str]]:
+        """Parse an incoming webhook and return the affected item keys.
+
+        Args:
+            request (Request): The incoming HTTP request.
+
+        Returns:
+            tuple[bool, Sequence[str]]: A tuple where the first element indicates
+                whether the webhook applies to the current provider, and the second
+                element is a sequence of affected item keys.
+        """
+        return False, ()
+
+    @abstractmethod
+    def user(self) -> LibraryUser | None:
+        """Return the associated user object, if any.
+
+        Returns:
+            LibraryUser | None: The associated user object, if any.
+        """
+        ...
