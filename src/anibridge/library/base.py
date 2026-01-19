@@ -22,11 +22,13 @@ __all__ = [
     "LibrarySection",
     "LibraryShow",
     "LibraryUser",
+    "MappingDescriptor",
     "MediaKind",
 ]
 
 
 LibraryProviderT = TypeVar("LibraryProviderT", bound="LibraryProvider", covariant=True)
+MappingDescriptor = tuple[str, str, str | None]
 
 
 class MediaKind(StrEnum):
@@ -107,10 +109,6 @@ class LibraryMedia(LibraryEntity[LibraryProviderT], ABC):
         """Primary poster or cover image URL, if available."""
         return None
 
-    def ids(self) -> dict[str, str]:
-        """Return external identifier mappings for logging/debugging."""
-        return {}
-
 
 class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
     """Base class for library entries."""
@@ -118,6 +116,11 @@ class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
     @abstractmethod
     async def history(self) -> Sequence[HistoryEntry]:
         """Return user history entries for this media item (tz-aware timestamps)."""
+        ...
+
+    @abstractmethod
+    def mapping_descriptors(self) -> Sequence[MappingDescriptor]:
+        """Return possible mapping descriptors that could match to this item."""
         ...
 
     @abstractmethod
@@ -137,6 +140,7 @@ class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
         """Whether the item is on the user's watchlist."""
         ...
 
+    @property
     @abstractmethod
     async def review(self) -> str | None:
         """Return the user's review text for this item, if any."""
@@ -148,9 +152,10 @@ class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
         ...
 
     @property
+    @abstractmethod
     def user_rating(self) -> int | None:
         """User rating on a 0-100 scale, or None if not rated."""
-        return None
+        ...
 
     @property
     @abstractmethod
