@@ -120,7 +120,11 @@ class LibraryEntry[ProviderT: LibraryProvider](LibraryEntity[ProviderT], ABC):
 
     @abstractmethod
     def mapping_descriptors(self) -> Sequence[MappingDescriptor]:
-        """Return possible mapping descriptors that could match to this item."""
+        """Return possible mapping descriptors for the media item.
+
+        The returned descriptors refer to providers in the mapping database. They are
+        not related to the library provider of this item (although, they might match).
+        """
         ...
 
     @abstractmethod
@@ -216,8 +220,8 @@ class LibrarySeason(LibraryEntry[LibraryProviderT], ABC):
     def __repr__(self) -> str:
         """Short representation including show title and season index."""
         return (
-            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}>:"
-            f"S{self.index:02d}"
+            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}:"
+            f"S{self.index:02d}>"
         )
 
 
@@ -248,7 +252,7 @@ class LibraryEpisode(LibraryEntry[LibraryProviderT], ABC):
     def __repr__(self) -> str:
         """Short representation including show title, season and episode indexes."""
         return (
-            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}>:"
+            f"<{self.__class__.__name__}:{self.key}:{self.show().title[:32]}:"
             f"S{self.season_index:02d}E{self.index:02d}>"
         )
 

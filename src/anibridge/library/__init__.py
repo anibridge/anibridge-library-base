@@ -1,4 +1,4 @@
-"""Anibridge library provider base package."""
+"""AniBridge library provider base package."""
 
 from anibridge.library.base import (
     HistoryEntry,

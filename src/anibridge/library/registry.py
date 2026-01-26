@@ -5,6 +5,8 @@ from typing import TypeVar, overload
 
 from anibridge.library.base import LibraryProvider
 
+__all__ = ["LibraryProviderRegistry", "library_provider", "provider_registry"]
+
 LP = TypeVar("LP", bound=LibraryProvider)
 
 
