@@ -15,6 +15,7 @@ from anibridge.library.base import (
     LibraryUser,
     MappingDescriptor,
     MediaKind,
+    ProviderLogger,
 )
 from anibridge.library.registry import (
     LibraryProviderRegistry,
@@ -38,6 +39,7 @@ __all__ = [
     "LibraryUser",
     "MappingDescriptor",
     "MediaKind",
+    "ProviderLogger",
     "library_provider",
     "provider_registry",
 ]

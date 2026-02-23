@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from logging import Logger
 from typing import ClassVar, TypeVar, cast
 
 from starlette.requests import Request
@@ -24,11 +25,13 @@ __all__ = [
     "LibraryUser",
     "MappingDescriptor",
     "MediaKind",
+    "ProviderLogger",
 ]
 
 
 LibraryProviderT = TypeVar("LibraryProviderT", bound="LibraryProvider", covariant=True)
-MappingDescriptor = tuple[str, str, str | None]
+type MappingDescriptor = tuple[str, str, str | None]
+type ProviderLogger = Logger
 
 
 class MediaKind(StrEnum):
@@ -282,14 +285,16 @@ class LibraryProvider(ABC):
 
     NAMESPACE: ClassVar[str]
 
-    def __init__(self, *, config: dict | None = None) -> None:
+    def __init__(self, *, logger: ProviderLogger, config: dict | None = None) -> None:
         """Initialize the provider with optional configuration.
 
         Args:
+            logger (ProviderLogger): Application logger injected by AniBridge.
             config (dict | None): Any configuration options that were detected with the
                 provider's namespace as a prefix.
         """
-        return None
+        self.log: Logger = logger.getChild(f"library.{self.NAMESPACE}")
+        self.config: dict = config or {}
 
     async def initialize(self) -> None:
         """Asynchronous initialization hook.

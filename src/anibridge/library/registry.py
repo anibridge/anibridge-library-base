@@ -1,6 +1,7 @@
 """Registration utilities for `LibraryProvider` implementations."""
 
 from collections.abc import Callable, Iterator
+from logging import Logger
 from typing import TypeVar, overload
 
 from anibridge.library.base import LibraryProvider
@@ -21,11 +22,18 @@ class LibraryProviderRegistry:
         """Remove all provider registrations."""
         self._providers.clear()
 
-    def create(self, namespace: str, *, config: dict | None = None) -> LibraryProvider:
+    def create(
+        self,
+        namespace: str,
+        *,
+        logger: Logger,
+        config: dict | None = None,
+    ) -> LibraryProvider:
         """Instantiate the provider registered under `namespace`.
 
         Args:
             namespace (str): The namespace identifier to create.
+            logger (Logger): Application logger injected into the provider.
             config (dict | None): Optional configuration dictionary to pass to the
                 provider constructor.
 
@@ -33,7 +41,7 @@ class LibraryProviderRegistry:
             LibraryProvider: An instance of the registered provider.
         """
         provider_cls = self.get(namespace)
-        return provider_cls(config=config)
+        return provider_cls(logger=logger, config=config)
 
     def get(self, namespace: str) -> type[LibraryProvider]:
         """Return the provider class registered under `namespace`.
