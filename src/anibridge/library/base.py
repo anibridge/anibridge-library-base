@@ -8,7 +8,7 @@ from enum import StrEnum
 from logging import Logger
 from typing import ClassVar, TypeVar, cast
 
-from anibridge.utils import MappingDescriptor, ProviderLogger
+from anibridge.utils.types import MappingDescriptor, ProviderLogger
 from starlette.requests import Request
 
 __all__ = [
