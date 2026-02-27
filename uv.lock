@@ -4,7 +4,7 @@ requires-python = ">=3.14"
 
 [[package]]
 name = "anibridge-library-base"
-version = "0.2.0b3"
+version = "0.2.0b4"
 source = { editable = "." }
 dependencies = [
     { name = "anibridge-utils" },
@@ -20,7 +20,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "anibridge-utils", git = "https://github.com/anibridge/anibridge-utils" },
-    { name = "starlette", specifier = ">=0.50.0" },
+    { name = "starlette", specifier = ">=0.52.1" },
 ]
 
 [package.metadata.requires-dev]
