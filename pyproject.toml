@@ -19,7 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["starlette>=0.50.0"]
+dependencies = ["anibridge-utils>=0.1.0", "starlette>=0.52.1"]
 
 [tool.ruff]
 indent-width = 4
@@ -40,9 +40,12 @@ convention = "google"
 module-name = "anibridge.library"
 namespace = true
 
+[tool.uv.sources]
+anibridge-utils = { git = "https://github.com/anibridge/anibridge-utils" }
+
 [build-system]
 requires = ["uv_build>=0.9.21,<0.10.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["ruff>=0.14.4", "ty>=0.0.8"]
+dev = ["ruff>=0.15.4", "ty>=0.0.19"]
