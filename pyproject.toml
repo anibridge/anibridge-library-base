@@ -20,7 +20,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = ["anibridge-utils>=0.2.0b1", "starlette>=0.52.1"]
+dependencies = ["anibridge-utils>=0.2.0b2", "starlette>=0.52.1"]
 
 [tool.ruff]
 indent-width = 4
