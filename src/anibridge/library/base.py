@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from logging import Logger
 from typing import ClassVar, TypeVar, cast
 
 from anibridge.utils.types import MappingDescriptor, ProviderLogger
