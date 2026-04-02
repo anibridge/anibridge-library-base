@@ -4,7 +4,9 @@ import asyncio
 import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import cast
 
+from anibridge.utils.types import ProviderLogger
 from starlette.requests import Request
 
 from anibridge.library import HistoryEntry, LibraryEntry, LibraryMedia, LibraryProvider
@@ -18,7 +20,9 @@ class DummyLibraryProvider(LibraryProvider):
 
     def __init__(self) -> None:
         """Initialize the provider with a test logger."""
-        super().__init__(logger=logging.getLogger("tests.library"))
+        super().__init__(
+            logger=cast(ProviderLogger, logging.getLogger("tests.library"))
+        )
 
     async def get_sections(self) -> tuple[LibrarySection[DummyLibraryProvider], ...]:
         """Return a single dummy section."""
