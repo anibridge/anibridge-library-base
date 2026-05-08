@@ -26,7 +26,7 @@ To get more context, read the `anibridge.library.base` module docstrings.
     - `async close() -> None`: Close the provider and release resources.
     - `async get_sections() -> Sequence[LibrarySection[LibraryProviderT]]`: Return available library sections for the provider.
     - `async list_items(section: LibrarySection[LibraryProviderT], *, min_last_modified: datetime | None = None, require_watched: bool = False, keys: Sequence[str] | None = None) -> Sequence[LibraryEntry[LibraryProviderT]]`: List entries within a section with optional filtering.
-    - `async parse_webhook(request: Request) -> tuple[bool, Sequence[str]]`: Parse an incoming webhook and return whether it applies plus affected item keys.
+    - `async parse_webhook(request: litestar.connection.request.Request) -> tuple[bool, Sequence[str]]`: Parse an incoming webhook and return whether it applies plus affected item keys.
     - `user() -> LibraryUser | None`: Return the associated user object, if any.
 
 - `LibraryEntry` (per-item user state)

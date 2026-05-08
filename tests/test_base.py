@@ -4,13 +4,36 @@ import asyncio
 import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 from anibridge.utils.types import ProviderLogger
-from starlette.requests import Request
+from litestar.connection.request import Request
 
 from anibridge.library import HistoryEntry, LibraryEntry, LibraryMedia, LibraryProvider
 from anibridge.library.base import LibrarySection, LibraryUser, MediaKind
+
+
+def _make_request() -> Request:
+    return Request(
+        scope=cast(
+            Any,
+            {
+                "type": "http",
+                "asgi": {"version": "3.0", "spec_version": "2.3"},
+                "method": "POST",
+                "scheme": "http",
+                "path": "/webhook",
+                "raw_path": b"/webhook",
+                "query_string": b"",
+                "root_path": "",
+                "headers": [],
+                "client": ("127.0.0.1", 12345),
+                "server": ("testserver", 80),
+                "path_params": {},
+                "state": {},
+            },
+        )
+    )
 
 
 class DummyLibraryProvider(LibraryProvider):
@@ -139,15 +162,7 @@ class DummyLibraryEntry(LibraryEntry[DummyLibraryProvider]):
 def test_library_provider_default_hooks() -> None:
     """The default provider hooks should be safe no-ops."""
     provider = DummyLibraryProvider()
-    request = Request(
-        {
-            "type": "http",
-            "method": "POST",
-            "path": "/webhook",
-            "headers": [],
-            "query_string": b"",
-        }
-    )
+    request = _make_request()
 
     assert asyncio.run(provider.initialize()) is None
     assert asyncio.run(provider.clear_cache()) is None

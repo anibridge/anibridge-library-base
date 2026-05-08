@@ -5,10 +5,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, TypeVar, cast
 
 from anibridge.utils.types import MappingDescriptor, ProviderLogger
-from starlette.requests import Request
+
+if TYPE_CHECKING:
+    from litestar.connection.request import Request
 
 __all__ = [
     "HistoryEntry",
